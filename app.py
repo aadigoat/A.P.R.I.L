@@ -1,17 +1,21 @@
 import streamlit as st
-import google.generativeai as genai
-import os
+from google import genai
 
 # ==========================================
 # 1. CORE SYSTEM CONFIGURATION
 # ==========================================
 st.set_page_config(page_title="April OS", page_icon="⚡", layout="centered")
 
-api_key = os.environ.get("GEMINI_API_KEY")
-if not api_key:
+# Securely initialize the modern Google GenAI Client from Streamlit Secrets
+if "GEMINI_API_KEY" not in st.secrets:
     st.error("Missing GEMINI_API_KEY. Please add it to your Streamlit Secrets.")
+    client = None
 else:
-    genai.configure(api_key=api_key)
+    try:
+        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+    except Exception as e:
+        st.error(f"Failed to initialize Gemini Client: {str(e)}")
+        client = None
 
 # Initialize persistent session states
 if "history" not in st.session_state:
@@ -118,12 +122,18 @@ if user_input:
                 
                 # ROUTE C: Gemini Standard Text Brain
                 else:
-                    try:
-                        model = genai.GenerativeModel('gemini-pro')
-                        response = model.generate_content(clean_prompt)
-                        response_text = response.text
-                    except Exception as e:
-                        response_text = f"Error communicating with brain core: {str(e)}"
+                    if client is None:
+                        response_text = "Brain core offline. Please check your GEMINI_API_KEY configuration in Secrets."
+                    else:
+                        try:
+                            # Using the modern client layout and the fast gemini-2.5-flash model
+                            response = client.models.generate_content(
+                                model='gemini-2.5-flash',
+                                contents=clean_prompt,
+                            )
+                            response_text = response.text
+                        except Exception as e:
+                            response_text = f"Error communicating with brain core: {str(e)}"
                 
                 # Save her text response
                 st.markdown(response_text)
