@@ -128,7 +128,7 @@ if user_input:
                         try:
                             # Using the modern client layout and the fast gemini-2.5-flash model
                             response = client.models.generate_content(
-                                model='gemini-1.5-pro',
+                                model='gemini-2.5-pro',
                                 contents=clean_prompt,
                             )
                             response_text = response.text
